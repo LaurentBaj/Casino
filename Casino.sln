@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Casino.Core", "src\Casino.Core\Casino.Core.fsproj", "{ED4F636F-D68D-49C7-BEE0-45290E25AA61}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Casino.UI", "src\Casino.UI\Casino.UI.fsproj", "{DF3A9597-83E8-4E91-B081-1FED409CD3CC}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Casino.Core.Tests", "tests\Casino.Core.Tests\Casino.Core.Tests.fsproj", "{2A1620EF-5DE6-4FB3-B284-544D4BEB576C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ED4F636F-D68D-49C7-BEE0-45290E25AA61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED4F636F-D68D-49C7-BEE0-45290E25AA61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED4F636F-D68D-49C7-BEE0-45290E25AA61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED4F636F-D68D-49C7-BEE0-45290E25AA61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF3A9597-83E8-4E91-B081-1FED409CD3CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF3A9597-83E8-4E91-B081-1FED409CD3CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF3A9597-83E8-4E91-B081-1FED409CD3CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF3A9597-83E8-4E91-B081-1FED409CD3CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A1620EF-5DE6-4FB3-B284-544D4BEB576C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A1620EF-5DE6-4FB3-B284-544D4BEB576C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A1620EF-5DE6-4FB3-B284-544D4BEB576C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A1620EF-5DE6-4FB3-B284-544D4BEB576C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

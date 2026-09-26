@@ -33,7 +33,7 @@ module InitGameState =
         let rounds = getRoundsBasedOnPlayerCount playerCount
 
         { Deck = fullDeck
-          Board = { Cards = [] }
+          Board = { Slots = [] }
           Players = players
           Rounds = rounds
           LastCaptured = None

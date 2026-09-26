@@ -43,6 +43,15 @@ module DeckOperations =
     open System
     open Casino.Core.Models
 
+    let private rankValue =
+        fun card ->
+            match card.Rank with
+            | Number n -> n
+            | Ace -> 14
+            | King -> 13
+            | Queen -> 12
+            | Jack -> 11
+    
     let private dealCardsToPlayers (players: Map<Guid, Player>) (deltCards: Card list) =
         let updatedPlayers, _ =
             Map.fold
@@ -81,15 +90,19 @@ module DeckOperations =
                 playerDraw, [], finalDeck
 
         let updatedPlayers = dealCardsToPlayers players cardsForPlayers
+    
+        let slotsForFirstRound (initialBoardCards: Card list): Slot list =
+            initialBoardCards
+            |> List.map (fun card ->
+                    let points = rankValue card
+                    { Cards = [card]; AggregateRankPoints = points}) 
 
-        let updatedBoardCards =
+        let slots =
             match state.CurrentRound with
-            | First -> cardsForBoard
-            | _ -> state.Board.Cards
-
+            | First -> slotsForFirstRound cardsForBoard
+            | _ -> []
+     
         { state with
             Deck = updatedDeck
-            Board =
-                { state.Board with
-                    Cards = updatedBoardCards }
+            Board = { state.Board with Slots = slots } 
             Players = updatedPlayers }

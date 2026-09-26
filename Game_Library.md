@@ -18,6 +18,7 @@ creating the revered game with great easy and correctness.
               - Collect ✔️
           - repeat until hands are empty
       - If last_round then
+          - Summarize 
           BREAK;
         else Loop
     

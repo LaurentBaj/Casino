@@ -19,7 +19,12 @@ let internal addCardToBoard board card: Board =
     let newSlot: Slot = { Cards = [card]; AggregateRankPoints = placementCardRank }
     { board with Slots = [newSlot] @ board.Slots }
 
-/// <summary> Helper function for when a player collects cards from board</summary>
+/// <summary>
+///  Helper function for when a player collects cards from board
+/// </summary>
+/// <remark> 
+/// Cards for collection should be chosen by player and not automatically be calculated
+/// </remark> 
 let internal collectFromBord
     (state: GameState)
     (playerId: Guid)
@@ -32,13 +37,11 @@ let internal collectFromBord
 
     if collectionSum > 0 && collectionSum = playerCardValue then
 
-        let updatedBoardCards =
-            cardsForCollection
-            |> List.filter (fun card -> card <> playerCard)
+        let updatedSlots =
+            state.Board.Slots
+            |> List.filter (fun slot -> slot.AggregateRankPoints <> collectionSum)      
 
-        let updatedBoard =
-            { state.Board with
-                Slots = updatedBoardCards }
+        let updatedBoard = { state.Board with Slots = updatedSlots }
 
         let player = state.Players.[playerId]
         let updatedHand = player.Hand |> List.filter (fun c -> c <> playerCard)
@@ -58,7 +61,7 @@ let internal collectFromBord
 
         Valid updatedState
     else
-        Invalid "Insufficient (rank) points for collection"
+        Invalid $"Insufficient (rank) points for collection. Target: {collectionSum} - Player card: {playerCard.Rank}"
 
 // Merging goal: 7
 // Cards on table mighht be: 2 - 5 - 7 - 9

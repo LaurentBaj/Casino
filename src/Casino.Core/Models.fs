@@ -35,7 +35,7 @@ type Slot = {
 }
 
 type Board = {
-    Cards: Slot list
+    Slots: Slot list
 }
 
 type Round =

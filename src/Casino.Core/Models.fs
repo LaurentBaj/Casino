@@ -28,10 +28,15 @@ type Player =
       Hand: Card list
       CapturedCards: Card list }
 
-type Board =
-    { Cards: Card list
-    // Eventuelle bygninger ligger her
-    }
+// Represents card stack bound by a single card or aggregate of multiple cards
+type Slot = {
+    mutable Cards: Card list
+    mutable AggregateRankPoints: int
+}
+
+type Board = {
+    Cards: Slot list
+}
 
 type Round =
     | First // Table draws four cards as well as players

@@ -4,11 +4,6 @@ open Casino.Core.Models
 open Casino.Core.PlayerService
 open System
 
-/// <summary> Helper function for player 'Place' action</summary>
-let internal addCardToBoard board card =
-    { board with
-        Cards = card :: board.Cards }
-
 let private rankValue =
     fun card ->
         match card.Rank with
@@ -17,6 +12,12 @@ let private rankValue =
         | King -> 13
         | Queen -> 12
         | Jack -> 11
+        
+/// <summary> Helper function for player 'Place' action</summary>
+let internal addCardToBoard board card: Board =
+    let placementCardRank: int = rankValue card
+    let newSlot: Slot = { Cards = [card]; AggregateRankPoints = placementCardRank }
+    { board with Slots = [newSlot] @ board.Slots }
 
 /// <summary> Helper function for when a player collects cards from board</summary>
 let internal collectFromBord
@@ -31,11 +32,13 @@ let internal collectFromBord
 
     if collectionSum > 0 && collectionSum = playerCardValue then
 
-        let updatedBoardCards = state.Board.Cards |> List.except cardsForCollection
+        let updatedBoardCards =
+            cardsForCollection
+            |> List.filter (fun card -> card <> playerCard)
 
         let updatedBoard =
             { state.Board with
-                Cards = updatedBoardCards }
+                Slots = updatedBoardCards }
 
         let player = state.Players.[playerId]
         let updatedHand = player.Hand |> List.filter (fun c -> c <> playerCard)
@@ -63,6 +66,5 @@ let internal collectFromBord
 let public mergeCards (state: GameState) (playerId: Guid) (cardsForMerging: Card list) : PlayerActionResult =
 
     let mergeSum = List.sumBy (fun card -> rankValue card) cardsForMerging
-
 
     Valid state

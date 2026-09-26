@@ -85,6 +85,6 @@ module PlayerActions =
             let updatedBoard = addCardToBoard state.Board card 
             let updatedState = { state with Board = updatedBoard }
             Valid updatedState
-        | Merge cards -> Valid state
-        | Collect cards ->
+        | Merge _ -> Valid state
+        | Collect _ -> Valid state
             

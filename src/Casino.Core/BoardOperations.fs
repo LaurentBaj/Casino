@@ -1,30 +1,28 @@
 module Casino.Core.BoardOperations
 
+open Casino.Core.DeckOperations
 open Casino.Core.Models
 open Casino.Core.PlayerService
 open System
 
-let private rankValue =
-    fun card ->
-        match card.Rank with
-        | Number n -> n
-        | Ace -> 14
-        | King -> 13
-        | Queen -> 12
-        | Jack -> 11
-        
+
 /// <summary> Helper function for player 'Place' action</summary>
-let internal addCardToBoard board card: Board =
+let internal addCardToBoard board card : Board =
     let placementCardRank: int = rankValue card
-    let newSlot: Slot = { Cards = [card]; AggregateRankPoints = placementCardRank }
-    { board with Slots = [newSlot] @ board.Slots }
+
+    let newSlot: Slot =
+        { Cards = [ card ]
+          AggregateRankPoints = placementCardRank }
+
+    { board with
+        Slots = [ newSlot ] @ board.Slots }
 
 /// <summary>
 ///  Helper function for when a player collects cards from board
 /// </summary>
-/// <remark> 
+/// <remark>
 /// Cards for collection should be chosen by player and not automatically be calculated
-/// </remark> 
+/// </remark>
 let internal collectFromBord
     (state: GameState)
     (playerId: Guid)
@@ -39,9 +37,11 @@ let internal collectFromBord
 
         let updatedSlots =
             state.Board.Slots
-            |> List.filter (fun slot -> slot.AggregateRankPoints <> collectionSum)      
+            |> List.filter (fun slot -> slot.AggregateRankPoints <> collectionSum)
 
-        let updatedBoard = { state.Board with Slots = updatedSlots }
+        let updatedBoard =
+            { state.Board with
+                Slots = updatedSlots }
 
         let player = state.Players.[playerId]
         let updatedHand = player.Hand |> List.filter (fun c -> c <> playerCard)

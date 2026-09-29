@@ -26,17 +26,15 @@ type Player =
     { Id: Guid
       Name: string
       Hand: Card list
-      CapturedCards: Card list }
+      CapturedCards: Card list
+      Sweeps: Card list }
 
 // Represents card stack bound by a single card or aggregate of multiple cards
-type Slot = {
-    mutable Cards: Card list
-    mutable AggregateRankPoints: int
-}
+type Slot =
+    { mutable Cards: Card list
+      mutable AggregatePoints: int }
 
-type Board = {
-    Slots: Slot list
-}
+type Board = { Slots: Slot list }
 
 type Round =
     | First // Table draws four cards as well as players
@@ -56,7 +54,7 @@ type GameState =
 type PlayerAction =
     | Place of Card
     | Merge of Card list
-    | Collect of playerCard: Card * collectionCards: Card list
+    | Collect of playerCard: Card * collectionCards: Slot list
 
 type PlayerActionResult =
     | Valid of GameState

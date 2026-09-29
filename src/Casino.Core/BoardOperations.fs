@@ -12,7 +12,7 @@ let internal addCardToBoard board card : Board =
 
     let newSlot: Slot =
         { Cards = [ card ]
-          AggregateRankPoints = placementCardRank }
+          AggregatePoints = placementCardRank }
 
     { board with
         Slots = [ newSlot ] @ board.Slots }
@@ -27,17 +27,19 @@ let internal collectFromBord
     (state: GameState)
     (playerId: Guid)
     (playerCard: Card)
-    (cardsForCollection: Card list)
+    (cardsForCollection: Slot list)
     : PlayerActionResult =
 
     let playerCardValue = rankValue playerCard
-    let collectionSum = cardsForCollection |> List.sumBy rankValue
+
+    let collectionSum =
+        cardsForCollection |> List.sumBy (fun slot -> slot.AggregatePoints)
 
     if collectionSum > 0 && collectionSum = playerCardValue then
 
         let updatedSlots =
             state.Board.Slots
-            |> List.filter (fun slot -> slot.AggregateRankPoints <> collectionSum)
+            |> List.filter (fun slot -> slot.AggregatePoints <> collectionSum)
 
         let updatedBoard =
             { state.Board with
@@ -45,7 +47,13 @@ let internal collectFromBord
 
         let player = state.Players.[playerId]
         let updatedHand = player.Hand |> List.filter (fun c -> c <> playerCard)
-        let updatedCaptured = player.CapturedCards @ playerCard :: cardsForCollection
+
+        // TODO: add helper for mapping slot <--> card
+        let cardsCollected =
+            cardsForCollection
+            |> List.fold (fun cardList currentSlot -> currentSlot.Cards @ cardList) []
+
+        let updatedCaptured = player.CapturedCards @ playerCard :: cardsCollected
 
         let updatedPlayer =
             { player with

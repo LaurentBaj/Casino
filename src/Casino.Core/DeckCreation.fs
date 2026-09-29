@@ -52,6 +52,11 @@ module DeckOperations =
             | Queen -> 12
             | Jack -> 11
 
+    let internal toSlot: Card -> Slot =
+        fun card ->
+            { Cards = [ card ]
+              AggregatePoints = rankValue card }
+
     let private dealCardsToPlayers (players: Map<Guid, Player>) (deltCards: Card list) =
         let updatedPlayers, _ =
             Map.fold
@@ -97,7 +102,7 @@ module DeckOperations =
                 let points = rankValue card
 
                 { Cards = [ card ]
-                  AggregateRankPoints = points })
+                  AggregatePoints = points })
 
         let slots =
             match state.CurrentRound with

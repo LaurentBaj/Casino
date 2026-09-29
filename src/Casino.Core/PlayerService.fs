@@ -7,7 +7,8 @@ let private createPlayer i =
     { Name = i.ToString()
       CapturedCards = []
       Hand = []
-      Id = Guid.NewGuid() }
+      Id = Guid.NewGuid()
+      Sweeps = [] }
 
 let private mapPlayer = fun acc player -> Map.add player.Id player acc
 

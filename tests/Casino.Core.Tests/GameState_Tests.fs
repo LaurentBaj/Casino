@@ -56,7 +56,6 @@ open Casino.Core.GameState.PlayerActions
 
 let cards: Card list =
     [ { Rank = Number 2; Suit = Suit.Club }
-      { Rank = Number 4; Suit = Suit.Club }
       { Rank = Number 9; Suit = Suit.Diamond }
       { Rank = Jack; Suit = Suit.Heart } ]
 
@@ -87,3 +86,28 @@ let ``Player Place Action`` () =
     match stateAfterPlayerPlace with
     | Valid state -> state.Board.Slots.Length |> should equal 1
     | Invalid msg -> failwith msg
+
+
+let ``Player Collect Action`` () = 
+    let updatedState = dealCards state
+    let firstId: Guid = players.Keys |> Seq.toArray |> Array.item 0
+    let player = updatedState.Players[firstId]
+
+    let c1 = { Rank = Number 5; Suit = Heart }
+    let c2 = { Rank = Number 6; Suit = Spade }
+    let newSlot = { Cards = [ c1; c2 ]; AggregatePoints = 9 }
+    let updatedState = { updatedState with Board = { Slots = [newSlot] @ updatedState.Board.Slots } }    
+
+    let collectionCard = { Rank = Jack; Suit = Club }
+    let updatedPlayer = { player with  Hand = [collectionCard] @ player.Hand }
+
+    let slotsForCollection =
+        state.Board.Slots
+        |> List.filter (fun slot -> slot.AggregatePoints = rankValue collectionCard)
+    
+    let playerAction = Collect (updatedPlayer.Hand.Head, slotsForCollection)
+    let updatedState = playerTurn updatedState playerAction
+
+    // Verify it worked
+    
+

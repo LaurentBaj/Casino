@@ -1,5 +1,6 @@
 ﻿module Casino.Core.Tests.GameState_Tests
 
+open System
 open Casino.Core
 open Casino.Core.Models
 open Casino.Core.GameState
@@ -44,3 +45,45 @@ let ``Deal cards to players and board if necessary`` playerCount =
     |> Map.iter (fun _ player ->
         player.Hand.Length |> should equal 4
         printfn $"Player id {player.Id}: {printPlayerHand player.Hand}")
+
+
+// Player Actions
+open Casino.Core.DeckCreation
+open Casino.Core.PlayerService
+open Casino.Core.GameState
+open Casino.Core.GameState.PlayerActions
+
+
+let cards: Card list =
+    [ { Rank = Number 2; Suit = Suit.Club }
+      { Rank = Number 4; Suit = Suit.Club }
+      { Rank = Number 9; Suit = Suit.Diamond }
+      { Rank = Jack; Suit = Suit.Heart } ]
+
+let board: Board = { Slots = cards |> List.map (fun card -> toSlot card) }
+
+let players: Map<Guid, Player> = initializePlayers 3
+
+let state: GameState =
+    { Deck = initializeDeck DeckStatus.Shuffled
+      Players = players
+      Board = board
+      PlayerTurn = None
+      Rounds = [ First; InBetween; InBetween; Final ]
+      LastCaptured = None
+      CurrentRound = First }
+
+
+let ``Player Place Action`` () =
+
+    let updateStateAfterDeal = dealCards state
+    let randomPlayerId = players.Keys |> Seq.toArray |> Array.item 0
+
+    let player = updateStateAfterDeal.Players[randomPlayerId]
+    let playerAction = Place player.Hand.Head
+
+    let stateAfterPlayerPlace = playerTurn updateStateAfterDeal playerAction
+
+    match stateAfterPlayerPlace with
+    | Valid state -> state.Board.Slots.Length |> should equal 1
+    | Invalid msg -> failwith msg

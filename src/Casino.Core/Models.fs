@@ -1,7 +1,6 @@
 ﻿module Casino.Core.Models
 
 open System
-open System.Collections.Generic
 
 type Suit =
     | Diamond
@@ -54,7 +53,7 @@ type GameState =
 type PlayerAction =
     | Place of Card
     | Merge of Card list
-    | Collect of playerCard: Card * collectionCards: Slot list
+    | Collect of playerId: Guid * playerCard: Card * collectionCards: Slot list
 
 type PlayerActionResult =
     | Valid of GameState

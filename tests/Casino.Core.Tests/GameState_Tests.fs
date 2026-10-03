@@ -25,7 +25,7 @@ let ``Board initialization rounds test`` (playerCount, expectedRounds) =
 
 let printPlayerHand (hand: Card list) =
     [ for card in hand do
-          yield sprintf "%A" card ]
+          yield $"%A{card}" ]
 
 
 [<Theory>]
@@ -50,7 +50,6 @@ let ``Deal cards to players and board if necessary`` playerCount =
 // Player Actions
 open Casino.Core.DeckCreation
 open Casino.Core.PlayerService
-open Casino.Core.GameState
 open Casino.Core.GameState.PlayerActions
 
 
@@ -59,7 +58,7 @@ let cards: Card list =
       { Rank = Number 9; Suit = Suit.Diamond }
       { Rank = Jack; Suit = Suit.Heart } ]
 
-let board: Board = { Slots = cards |> List.map (fun card -> toSlot card) }
+let board: Board = { Slots = cards |> List.map toSlot }
 
 let players: Map<Guid, Player> = initializePlayers 3
 
@@ -72,42 +71,76 @@ let state: GameState =
       LastCaptured = None
       CurrentRound = First }
 
-
+[<Fact>]
 let ``Player Place Action`` () =
+    let playerCard = { Rank = Number 7; Suit = Club }
+    let playerId = Guid.NewGuid()
 
-    let updateStateAfterDeal = dealCards state
-    let randomPlayerId = players.Keys |> Seq.toArray |> Array.item 0
+    let player =
+        { Id = playerId
+          Name = "Player"
+          Hand = [ playerCard ]
+          CapturedCards = []
+          Sweeps = [] }
 
-    let player = updateStateAfterDeal.Players[randomPlayerId]
-    let playerAction = Place player.Hand.Head
+    let testState =
+        { state with
+            Board = { Slots = [] }
+            Players = [ playerId, player ] |> Map.ofList
+            PlayerTurn = Some playerId }
 
-    let stateAfterPlayerPlace = playerTurn updateStateAfterDeal playerAction
+    let stateAfterPlayerPlace = playerTurn testState (Place playerCard)
 
     match stateAfterPlayerPlace with
-    | Valid state -> state.Board.Slots.Length |> should equal 1
+    | Valid state ->
+        state.Board.Slots.Length |> should equal 1
+        state.Board.Slots.Head.Cards |> should equal [ playerCard ]
     | Invalid msg -> failwith msg
 
-
-let ``Player Collect Action`` () = 
-    let updatedState = dealCards state
-    let firstId: Guid = players.Keys |> Seq.toArray |> Array.item 0
-    let player = updatedState.Players[firstId]
-
-    let c1 = { Rank = Number 5; Suit = Heart }
-    let c2 = { Rank = Number 6; Suit = Spade }
-    let newSlot = { Cards = [ c1; c2 ]; AggregatePoints = 9 }
-    let updatedState = { updatedState with Board = { Slots = [newSlot] @ updatedState.Board.Slots } }    
+[<Fact>]
+let ``Player Collect Action`` () =
+    let collectingPlayerId = Guid.NewGuid()
+    let otherPlayerId = Guid.NewGuid()
 
     let collectionCard = { Rank = Jack; Suit = Club }
-    let updatedPlayer = { player with  Hand = [collectionCard] @ player.Hand }
+    let c1 = { Rank = Number 5; Suit = Heart }
+    let c2 = { Rank = Number 6; Suit = Spade }
+    let slotForCollection = { Cards = [ c1; c2 ]; AggregatePoints = 11 }
+    let existingSweepCard = { Rank = Ace; Suit = Diamond }
 
-    let slotsForCollection =
-        state.Board.Slots
-        |> List.filter (fun slot -> slot.AggregatePoints = rankValue collectionCard)
-    
-    let playerAction = Collect (updatedPlayer.Hand.Head, slotsForCollection)
-    let updatedState = playerTurn updatedState playerAction
+    let collectingPlayer =
+        { Id = collectingPlayerId
+          Name = "Collector"
+          Hand = [ collectionCard ]
+          CapturedCards = []
+          Sweeps = [] }
 
-    // Verify it worked
-    
+    let otherPlayer =
+        { Id = otherPlayerId
+          Name = "Other Player"
+          Hand = []
+          CapturedCards = []
+          Sweeps = [ existingSweepCard ] }
+        
+    let testPlayers = Map [(collectingPlayerId, collectingPlayer); (otherPlayerId, otherPlayer)]
 
+    let testState =
+        { state with
+            Board = { Slots = [ slotForCollection ] }
+            PlayerTurn = Some collectingPlayerId
+            Players = testPlayers }
+
+    let playerAction = Collect(collectingPlayerId, collectionCard, [ slotForCollection ])
+    let updatedState = playerTurn testState playerAction
+
+    match updatedState with
+    | Invalid msg -> failwith msg
+    | Valid state ->
+        let updatedCollectingPlayer = state.Players[collectingPlayerId]
+        let updatedOtherPlayer = state.Players[otherPlayerId]
+
+        state.Board.Slots |> List.isEmpty |> should equal true
+        updatedCollectingPlayer.Hand |> List.isEmpty |> should equal true
+        updatedCollectingPlayer.CapturedCards |> should equal [ c1; c2 ]
+        updatedCollectingPlayer.Sweeps |> List.isEmpty |> should equal true
+        updatedOtherPlayer.Sweeps |> List.isEmpty |> should equal true

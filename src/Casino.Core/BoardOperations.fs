@@ -5,17 +5,20 @@ open Casino.Core.Models
 open Casino.Core.PlayerService
 open System
 
-
 /// <summary> Helper function for player 'Place' action</summary>
-let internal addCardToBoard board card : Board =
+//  <remark> There are no possible invalid states that I can see here</remark>
+let internal addCardToBoard state card : PlayerActionResult =
     let placementCardRank: int = rankValue card
 
     let newSlot: Slot =
         { Cards = [ card ]
           AggregatePoints = placementCardRank }
 
-    { board with
-        Slots = [ newSlot ] @ board.Slots }
+    let updatedBoard =
+        { state.Board with
+            Slots = [ newSlot ] @ state.Board.Slots }
+
+    Valid { state with Board = updatedBoard }
 
 /// <summary>
 ///  Helper function for when a player collects cards from board
@@ -32,35 +35,54 @@ let internal collectFromBord
 
     let playerCardValue = rankValue playerCard
 
-    let collectionSum =
-        cardsForCollection |> List.sumBy (fun slot -> slot.AggregatePoints)
+    let collectionSum = List.sumBy _.AggregatePoints cardsForCollection
 
     if collectionSum > 0 && collectionSum = playerCardValue then
 
         let updatedSlots =
             state.Board.Slots
-            |> List.filter (fun slot -> slot.AggregatePoints <> collectionSum)
+            |> List.filter (fun slot -> not (cardsForCollection |> List.contains slot))
 
         let updatedBoard =
             { state.Board with
                 Slots = updatedSlots }
 
-        let player = state.Players.[playerId]
+        let player = state.Players[playerId]
         let updatedHand = player.Hand |> List.filter (fun c -> c <> playerCard)
 
-        // TODO: add helper for mapping slot <--> card
         let cardsCollected =
             cardsForCollection
             |> List.fold (fun cardList currentSlot -> currentSlot.Cards @ cardList) []
 
-        let updatedCaptured = player.CapturedCards @ playerCard :: cardsCollected
+        let isSweep: bool = updatedBoard.Slots.Length = 0
+
+        let otherPlayersHaveSweep =
+            state.Players
+            |> Map.exists (fun id player -> id <> playerId && not player.Sweeps.IsEmpty)
+
+        let playersAfterSweepPenalty =
+            if isSweep && otherPlayersHaveSweep then
+                handlePlayerSweep player.Id state.Players
+            else
+                state.Players
+
+        let updatedCaptured =
+            match isSweep with
+            | true -> player.CapturedCards @ cardsCollected
+            | _ -> player.CapturedCards @ playerCard :: cardsCollected
+
+        let updateSweepCards =
+            match isSweep with
+            | true when not otherPlayersHaveSweep -> player.Sweeps @ [ playerCard ]
+            | _ -> player.Sweeps
 
         let updatedPlayer =
             { player with
                 Hand = updatedHand
-                CapturedCards = updatedCaptured }
+                CapturedCards = updatedCaptured
+                Sweeps = updateSweepCards }
 
-        let updatedPlayers = state.Players |> Map.add playerId updatedPlayer
+        let updatedPlayers = playersAfterSweepPenalty |> Map.add playerId updatedPlayer
 
         let updatedState =
             { state with

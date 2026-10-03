@@ -20,3 +20,15 @@ let internal updatedPlayerHand =
         let playerHand = player.Hand
         let updatedHand = cards @ playerHand
         { player with Hand = updatedHand }
+
+let internal handlePlayerSweep (playerId: Guid) (players: Map<Guid, Player>) : Map<Guid, Player> =
+    players
+    |> Map.map (fun id player ->
+        if id <> playerId then
+            { player with
+                Sweeps =
+                    match player.Sweeps with
+                    | [] -> []
+                    | _ :: tail -> tail }
+        else
+            player)

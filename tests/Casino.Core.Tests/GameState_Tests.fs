@@ -74,6 +74,37 @@ let state: GameState =
 [<Fact>]
 let ``Player Place Action`` () =
     let playerCard = { Rank = Number 7; Suit = Club }
+    let remainingCard = { Rank = Number 3; Suit = Diamond }
+    let playerId = Guid.NewGuid()
+
+    let player =
+        { Id = playerId
+          Name = "Player"
+          Hand = [ playerCard; remainingCard ]
+          CapturedCards = []
+          Sweeps = [] }
+
+    let testState =
+        { state with
+            Board = { Slots = [] }
+            Players = [ playerId, player ] |> Map.ofList
+            PlayerTurn = Some playerId }
+
+    let stateAfterPlayerPlace = playerTurn testState (Place(playerId, playerCard))
+
+    match stateAfterPlayerPlace with
+    | Valid state ->
+        let updatedPlayer = state.Players[playerId]
+
+        state.Board.Slots.Length |> should equal 1
+        state.Board.Slots.Head.Cards |> should equal [ playerCard ]
+        updatedPlayer.Hand |> should equal [ remainingCard ]
+    | Invalid msg -> failwith msg
+
+[<Fact>]
+let ``Player Place Action fails when player does not have card`` () =
+    let playerCard = { Rank = Number 7; Suit = Club }
+    let cardNotInHand = { Rank = Number 3; Suit = Diamond }
     let playerId = Guid.NewGuid()
 
     let player =
@@ -89,13 +120,11 @@ let ``Player Place Action`` () =
             Players = [ playerId, player ] |> Map.ofList
             PlayerTurn = Some playerId }
 
-    let stateAfterPlayerPlace = playerTurn testState (Place playerCard)
+    let result = playerTurn testState (Place(playerId, cardNotInHand))
 
-    match stateAfterPlayerPlace with
-    | Valid state ->
-        state.Board.Slots.Length |> should equal 1
-        state.Board.Slots.Head.Cards |> should equal [ playerCard ]
-    | Invalid msg -> failwith msg
+    match result with
+    | Valid _ -> failwith "Expected Place action to be invalid"
+    | Invalid msg -> msg |> should equal "Player does not possess card for placement"
 
 [<Fact>]
 let ``Player Collect Action`` () =
@@ -122,7 +151,9 @@ let ``Player Collect Action`` () =
           CapturedCards = []
           Sweeps = [ existingSweepCard ] }
         
-    let testPlayers = Map [(collectingPlayerId, collectingPlayer); (otherPlayerId, otherPlayer)]
+    let testPlayers =
+        Map [ collectingPlayerId, collectingPlayer
+              otherPlayerId, otherPlayer ]
 
     let testState =
         { state with

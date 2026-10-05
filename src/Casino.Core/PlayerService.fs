@@ -10,7 +10,7 @@ let private createPlayer i =
       Id = Guid.NewGuid()
       Sweeps = [] }
 
-let private mapPlayer = fun acc player -> Map.add player.Id player acc
+let private mapPlayer = fun table player -> Map.add player.Id player table
 
 let internal initializePlayers count : Map<Guid, Player> =
     [ 1..count ] |> List.map createPlayer |> List.fold mapPlayer Map.empty

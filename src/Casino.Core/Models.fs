@@ -51,8 +51,8 @@ type GameState =
       CurrentRound: Round }
 
 type PlayerAction =
-    | Place of Card
-    | Merge of Card list
+    | Place of playerId: Guid * playerCard: Card
+    | Merge of playerId: Guid * playerCard: Card * mergeCards: Slot list list // Perhaps I could use grouping
     | Collect of playerId: Guid * playerCard: Card * collectionCards: Slot list
 
 type PlayerActionResult =

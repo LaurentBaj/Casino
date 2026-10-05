@@ -7,18 +7,32 @@ open System
 
 /// <summary> Helper function for player 'Place' action</summary>
 //  <remark> There are no possible invalid states that I can see here</remark>
-let internal addCardToBoard state card : PlayerActionResult =
-    let placementCardRank: int = rankValue card
+let internal addCardToBoard state playerId playerCard : PlayerActionResult =
+    let player = state.Players[playerId]
+    let playerHasCard = player.Hand |> List.exists (fun card -> card = playerCard)
+    
+    if not playerHasCard then
+        Invalid "Player does not possess card for placement"
+    else
+        let placementCardRank: int = rankValue playerCard
 
-    let newSlot: Slot =
-        { Cards = [ card ]
-          AggregatePoints = placementCardRank }
+        let newSlot: Slot =
+            { Cards = [ playerCard ]
+              AggregatePoints = placementCardRank }
 
-    let updatedBoard =
-        { state.Board with
-            Slots = [ newSlot ] @ state.Board.Slots }
+        let updatedBoard =
+            { state.Board with
+                Slots = [ newSlot ] @ state.Board.Slots }
 
-    Valid { state with Board = updatedBoard }
+        let updatedPlayer =
+            { player with
+                Hand = player.Hand |> List.except [ playerCard ] }
+
+        let updatedPlayers = Map.add playerId updatedPlayer state.Players
+        
+        Valid { state with
+                    Board = updatedBoard
+                    Players = updatedPlayers }
 
 /// <summary>
 ///  Helper function for when a player collects cards from board
@@ -93,11 +107,46 @@ let internal collectFromBord
     else
         Invalid $"Insufficient (rank) points for collection. Target: {collectionSum} - Player card: {playerCard.Rank}"
 
+
 // Merging goal: 7
 // Cards on table mighht be: 2 - 5 - 7 - 9
 // Available pairs: '2- 5'  and  '7'
-let public mergeCards (state: GameState) (playerId: Guid) (cardsForMerging: Card list) : PlayerActionResult =
+let public mergeCards
+    (state: GameState)
+    (playerId: Guid)
+    (cardsForMerging: Slot list list)
+    (playerCard: Card)
+    : PlayerActionResult =
 
-    let mergeSum = List.sumBy (fun card -> rankValue card) cardsForMerging
+    let verifySlotGrouping =
+        fun (slotList: Slot list) ->
+            slotList |> List.forall (fun slot -> slot.Cards.Length = 1)
+            && slotList |> List.sumBy (fun slot -> slot.AggregatePoints) = rankValue playerCard
 
-    Valid state
+    let isValidCollection = List.forall verifySlotGrouping cardsForMerging
+
+    let player = state.Players[playerId]
+
+    let isValidPlayerAction =
+        player.Hand
+        |> List.exists (fun card -> card <> playerCard && rankValue playerCard = rankValue card)
+
+    if not isValidCollection then
+        Invalid "Invalid slot grouping or cards for merging"
+    elif not isValidPlayerAction then
+        Invalid "Player does not hold card required for collecting merge collection later"
+    else
+        let updatedBoard =
+            { state.Board with
+                Slots = state.Board.Slots |> List.except (cardsForMerging |> List.concat) }
+
+        let updatedPlayer =
+            { player with
+                Hand = player.Hand |> List.except [ playerCard ] }
+
+        let updatedPlayers = Map.add player.Id updatedPlayer state.Players
+
+        Valid
+            { state with
+                Board = updatedBoard
+                Players = updatedPlayers }

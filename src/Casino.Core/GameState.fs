@@ -53,6 +53,6 @@ module PlayerActions =
     /// <returns>For now it returns an updated Game state</returns>
     let public playerTurn state action =
         match action with
-        | Place card -> addCardToBoard state card // There are no possible invalid states that I can see here
-        | Collect(playerId, playerCard, cardsForCollection) -> collectFromBord state playerId playerCard cardsForCollection
-        | Merge _ -> Valid state
+        | Place   (playerId, playerCard) -> addCardToBoard state playerId playerCard
+        | Collect (playerId, playerCard, cardsForCollection) -> collectFromBord state playerId playerCard cardsForCollection
+        | Merge   (playerId, playerCard, cardsForMerging) -> mergeCards state playerId cardsForMerging playerCard

@@ -53,6 +53,9 @@ module PlayerActions =
     /// <returns>For now it returns an updated Game state</returns>
     let public playerTurn state action =
         match action with
-        | Place   (playerId, playerCard) -> addCardToBoard state playerId playerCard
-        | Collect (playerId, playerCard, cardsForCollection) -> collectFromBord state playerId playerCard cardsForCollection
-        | Merge   (playerId, playerCard, cardsForMerging) -> mergeCards state playerId cardsForMerging playerCard
+        | Place(playerId, playerCard) ->
+            addCardToBoard state playerId playerCard
+        | Collect(playerId, playerCard, cardsForCollection) ->
+            collectFromBord state playerId playerCard cardsForCollection
+        | Merge(playerId, playerCard, cardsForMerging) ->
+            mergeCards state playerId cardsForMerging playerCard

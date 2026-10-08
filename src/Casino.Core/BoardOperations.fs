@@ -6,11 +6,11 @@ open Casino.Core.PlayerService
 open System
 
 /// <summary> Helper function for player 'Place' action</summary>
-//  <remark> There are no possible invalid states that I can see here</remark>
+///  <remark> There are no possible invalid states that I can see here</remark>
 let internal addCardToBoard state playerId playerCard : PlayerActionResult =
     let player = state.Players[playerId]
     let playerHasCard = player.Hand |> List.exists (fun card -> card = playerCard)
-    
+
     if not playerHasCard then
         Invalid "Player does not possess card for placement"
     else
@@ -29,10 +29,11 @@ let internal addCardToBoard state playerId playerCard : PlayerActionResult =
                 Hand = player.Hand |> List.except [ playerCard ] }
 
         let updatedPlayers = Map.add playerId updatedPlayer state.Players
-        
-        Valid { state with
-                    Board = updatedBoard
-                    Players = updatedPlayers }
+
+        Valid
+            { state with
+                Board = updatedBoard
+                Players = updatedPlayers }
 
 /// <summary>
 ///  Helper function for when a player collects cards from board
@@ -108,6 +109,18 @@ let internal collectFromBord
         Invalid $"Insufficient (rank) points for collection. Target: {collectionSum} - Player card: {playerCard.Rank}"
 
 
+// If a slot already has been merged, then it can only later be merged with a player card of the same rank value.
+// Example: Slot (6, 6) and Slot (8, 4) can be merged with Queen, but Slot (6, 6) cannot be merged with Slot (2) to make Ace.
+let internal verifySlotGrouping (grouping: Slot list) (playerCard: Card): bool =
+    let targetPoints: int = rankValue playerCard
+    let combinedGroupingPoints: int = List.sumBy _.AggregatePoints grouping
+    let containsMergedSlot = grouping |> List.exists (fun slot -> slot.Cards.Length > 1)
+
+    if containsMergedSlot then
+        grouping.Length = 1 && combinedGroupingPoints = targetPoints
+    else
+        combinedGroupingPoints = targetPoints
+
 // Merging goal: 7
 // Cards on table mighht be: 2 - 5 - 7 - 9
 // Available pairs: '2- 5'  and  '7'
@@ -117,14 +130,8 @@ let public mergeCards
     (cardsForMerging: Slot list list)
     (playerCard: Card)
     : PlayerActionResult =
-
-    let verifySlotGrouping =
-        fun (slotList: Slot list) ->
-            slotList |> List.forall (fun slot -> slot.Cards.Length = 1)
-            && slotList |> List.sumBy (fun slot -> slot.AggregatePoints) = rankValue playerCard
-
-    let isValidCollection = List.forall verifySlotGrouping cardsForMerging
-
+        
+    let isValidCollection = cardsForMerging |> List.forall (fun grouping -> verifySlotGrouping grouping playerCard) 
     let player = state.Players[playerId]
 
     let isValidPlayerAction =
@@ -136,15 +143,33 @@ let public mergeCards
     elif not isValidPlayerAction then
         Invalid "Player does not hold card required for collecting merge collection later"
     else
-        let updatedBoard =
-            { state.Board with
-                Slots = state.Board.Slots |> List.except (cardsForMerging |> List.concat) }
-
         let updatedPlayer =
             { player with
                 Hand = player.Hand |> List.except [ playerCard ] }
 
         let updatedPlayers = Map.add player.Id updatedPlayer state.Players
+
+        let flattenSlots: Slot list -> Slot =
+            fun sList ->
+                { Cards = sList |> List.collect _.Cards
+                  AggregatePoints = sList |> List.sumBy _.AggregatePoints }
+
+        let mergedSlots: Slot list = List.map flattenSlots cardsForMerging
+
+        let preservedSlots: Slot list =
+            state.Board.Slots
+            |> List.filter (fun slot ->
+                mergedSlots
+                |> List.exists (fun mergedSlot ->
+                    mergedSlot.Cards
+                    |> List.exists (fun mergedCard -> slot.Cards |> List.contains mergedCard))
+                |> not)
+
+        let updatedSlots: Slot list = mergedSlots @ preservedSlots
+
+        let updatedBoard =
+            { state.Board with
+                Slots = updatedSlots }
 
         Valid
             { state with

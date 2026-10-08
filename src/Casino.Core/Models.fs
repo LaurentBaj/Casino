@@ -28,19 +28,18 @@ type Player =
       CapturedCards: Card list
       Sweeps: Card list }
 
-// Represents card stack bound by a single card or aggregate of multiple cards
+// Represents slot on the board. Comprised of one or many cards
 type Slot =
-    { mutable Cards: Card list
-      mutable AggregatePoints: int }
+    { Cards: Card list
+      AggregatePoints: int }
 
 type Board = { Slots: Slot list }
 
 type Round =
-    | First // Table draws four cards as well as players
-    | Final //  Should notify
-    | InBetween // draw only to players
+    | First 
+    | InBetween
+    | Final 
 
-// Modify GameState objects as the fields don't make sense
 type GameState =
     { Deck: Card list
       Players: Map<Guid, Player>

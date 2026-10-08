@@ -134,7 +134,11 @@ let ``Player Collect Action`` () =
     let collectionCard = { Rank = Jack; Suit = Club }
     let c1 = { Rank = Number 5; Suit = Heart }
     let c2 = { Rank = Number 6; Suit = Spade }
-    let slotForCollection = { Cards = [ c1; c2 ]; AggregatePoints = 11 }
+
+    let slotForCollection =
+        { Cards = [ c1; c2 ]
+          AggregatePoints = 11 }
+
     let existingSweepCard = { Rank = Ace; Suit = Diamond }
 
     let collectingPlayer =
@@ -150,10 +154,9 @@ let ``Player Collect Action`` () =
           Hand = []
           CapturedCards = []
           Sweeps = [ existingSweepCard ] }
-        
+
     let testPlayers =
-        Map [ collectingPlayerId, collectingPlayer
-              otherPlayerId, otherPlayer ]
+        Map [ collectingPlayerId, collectingPlayer; otherPlayerId, otherPlayer ]
 
     let testState =
         { state with
@@ -161,7 +164,9 @@ let ``Player Collect Action`` () =
             PlayerTurn = Some collectingPlayerId
             Players = testPlayers }
 
-    let playerAction = Collect(collectingPlayerId, collectionCard, [ slotForCollection ])
+    let playerAction =
+        Collect(collectingPlayerId, collectionCard, [ slotForCollection ])
+
     let updatedState = playerTurn testState playerAction
 
     match updatedState with
@@ -175,3 +180,129 @@ let ``Player Collect Action`` () =
         updatedCollectingPlayer.CapturedCards |> should equal [ c1; c2 ]
         updatedCollectingPlayer.Sweeps |> List.isEmpty |> should equal true
         updatedOtherPlayer.Sweeps |> List.isEmpty |> should equal true
+
+[<Fact>]
+let ``Player Merge Cards`` () =
+    let playerId = Guid.NewGuid()
+
+    let playerCard = { Rank = Jack; Suit = Club }
+    let collectionCard = { Rank = Jack; Suit = Diamond }
+    let two = { Rank = Number 2; Suit = Heart }
+    let seven = { Rank = Number 7; Suit = Diamond }
+    let nine = { Rank = Number 9; Suit = Spade }
+    let boardJack = { Rank = Jack; Suit = Heart }
+
+    let twoSlot = toSlot two
+    let sevenSlot = toSlot seven
+    let nineSlot = toSlot nine
+    let jackSlot = toSlot boardJack
+
+    let player =
+        { Id = playerId
+          Name = "Player"
+          Hand = [ playerCard; collectionCard ]
+          CapturedCards = []
+          Sweeps = [] }
+
+    let testState =
+        { state with
+            Board = { Slots = [ twoSlot; sevenSlot; nineSlot; jackSlot ] }
+            Players = [ playerId, player ] |> Map.ofList
+            PlayerTurn = Some playerId }
+
+    let playerAction =
+        Merge(playerId, playerCard, [ [ twoSlot; nineSlot ]; [ jackSlot ] ])
+
+    let updatedState = playerTurn testState playerAction
+
+    match updatedState with
+    | Invalid msg -> failwith msg
+    | Valid state ->
+        let updatedPlayer = state.Players[playerId]
+
+        let expectedMergedSlot =
+            { Cards = [ two; nine ]
+              AggregatePoints = 11 }
+
+        state.Board.Slots.Length |> should equal 3
+        state.Board.Slots |> should contain expectedMergedSlot
+        state.Board.Slots |> should contain jackSlot
+        state.Board.Slots |> should contain sevenSlot
+        updatedPlayer.Hand |> should equal [ collectionCard ]
+
+[<Fact>]
+let ``Player Merge Cards fails when grouping does not match player card rank`` () =
+    let playerId = Guid.NewGuid()
+
+    let playerCard = { Rank = Jack; Suit = Club }
+    let collectionCard = { Rank = Jack; Suit = Diamond }
+    let two = { Rank = Number 2; Suit = Heart }
+    let seven = { Rank = Number 7; Suit = Diamond }
+    let nine = { Rank = Number 9; Suit = Spade }
+    let boardJack = { Rank = Jack; Suit = Heart }
+
+    let twoSlot = toSlot two
+    let sevenSlot = toSlot seven
+    let nineSlot = toSlot nine
+    let jackSlot = toSlot boardJack
+
+    let player =
+        { Id = playerId
+          Name = "Player"
+          Hand = [ playerCard; collectionCard ]
+          CapturedCards = []
+          Sweeps = [] }
+
+    let testState =
+        { state with
+            Board = { Slots = [ twoSlot; sevenSlot; nineSlot; jackSlot ] }
+            Players = [ playerId, player ] |> Map.ofList
+            PlayerTurn = Some playerId }
+
+    let playerAction =
+        Merge(playerId, playerCard, [ [ twoSlot; sevenSlot ]; [ jackSlot ] ])
+
+    let result = playerTurn testState playerAction
+
+    match result with
+    | Valid _ -> failwith "Expected Merge action to be invalid"
+    | Invalid msg -> msg |> should equal "Invalid slot grouping or cards for merging"
+
+[<Fact>]
+let ``Player Merge Cards fails when already merged slot is used to make higher aggregate`` () =
+    let playerId = Guid.NewGuid()
+
+    let playerCard = { Rank = Ace; Suit = Club }
+    let collectionCard = { Rank = Ace; Suit = Diamond }
+    let sixOfHearts = { Rank = Number 6; Suit = Heart }
+    let sixOfSpades = { Rank = Number 6; Suit = Spade }
+    let two = { Rank = Number 2; Suit = Diamond }
+
+    let alreadyMergedSlot =
+        { Cards = [ sixOfHearts; sixOfSpades ]
+          AggregatePoints = 12 }
+
+    let twoSlot = toSlot two
+
+    let player =
+        { Id = playerId
+          Name = "Player"
+          Hand = [ playerCard; collectionCard ]
+          CapturedCards = []
+          Sweeps = [] }
+
+    let testState =
+        { state with
+            Board = { Slots = [ alreadyMergedSlot; twoSlot ] }
+            Players = [ playerId, player ] |> Map.ofList
+            PlayerTurn = Some playerId }
+
+    let playerAction =
+        Merge(playerId, playerCard, [ [ alreadyMergedSlot; twoSlot ] ])
+
+    let result = playerTurn testState playerAction
+
+    match result with
+    | Valid _ -> failwith "Expected Merge action to be invalid"
+    | Invalid msg -> msg |> should equal "Invalid slot grouping or cards for merging"
+

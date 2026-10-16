@@ -36,9 +36,9 @@ type Slot =
 type Board = { Slots: Slot list }
 
 type Round =
-    | First 
+    | First
     | InBetween
-    | Final 
+    | Final
 
 type GameState =
     { Deck: Card list
@@ -57,3 +57,13 @@ type PlayerAction =
 type PlayerActionResult =
     | Valid of GameState
     | Invalid of string
+
+type PlayerStats =
+    { Points: int
+      Specials: Card list
+      Aces: Card list
+      Clubs: Card list
+      Sweeps: Card list
+      Player: Player }
+
+type GameStats = { Winner: Player; Stats: PlayerStats list }

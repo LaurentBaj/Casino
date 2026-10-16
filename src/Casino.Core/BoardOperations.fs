@@ -111,7 +111,7 @@ let internal collectFromBord
 
 // If a slot already has been merged, then it can only later be merged with a player card of the same rank value.
 // Example: Slot (6, 6) and Slot (8, 4) can be merged with Queen, but Slot (6, 6) cannot be merged with Slot (2) to make Ace.
-let internal verifySlotGrouping (grouping: Slot list) (playerCard: Card): bool =
+let internal verifySlotGrouping (grouping: Slot list) (playerCard: Card) : bool =
     let targetPoints: int = rankValue playerCard
     let combinedGroupingPoints: int = List.sumBy _.AggregatePoints grouping
     let containsMergedSlot = grouping |> List.exists (fun slot -> slot.Cards.Length > 1)
@@ -130,8 +130,11 @@ let public mergeCards
     (cardsForMerging: Slot list list)
     (playerCard: Card)
     : PlayerActionResult =
-        
-    let isValidCollection = cardsForMerging |> List.forall (fun grouping -> verifySlotGrouping grouping playerCard) 
+
+    let isValidCollection =
+        cardsForMerging
+        |> List.forall (fun grouping -> verifySlotGrouping grouping playerCard)
+
     let player = state.Players[playerId]
 
     let isValidPlayerAction =

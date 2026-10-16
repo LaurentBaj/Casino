@@ -40,17 +40,16 @@ module DeckCreation =
 
 module DeckOperations =
 
-    open System
-    open Casino.Core.Models
-
     let internal rankValue =
         fun card ->
-            match card.Rank with
-            | Number n -> n
-            | Ace -> 14
-            | King -> 13
-            | Queen -> 12
-            | Jack -> 11
+            match card with
+            | { Rank = Number 2 ; Suit = Club } -> 15
+            | { Rank = Number 10 ; Suit = Diamond } -> 16
+            | { Rank = Number n } -> n
+            | { Rank = Ace} -> 14
+            | { Rank = King} -> 13
+            | { Rank = Queen} -> 12
+            | { Rank = Jack} -> 11
 
     let internal toSlot: Card -> Slot =
         fun card ->
@@ -100,7 +99,6 @@ module DeckOperations =
             initialBoardCards
             |> List.map (fun card ->
                 let points = rankValue card
-
                 { Cards = [ card ]
                   AggregatePoints = points })
 
@@ -111,5 +109,5 @@ module DeckOperations =
 
         { state with
             Deck = updatedDeck
-            Board = { state.Board with Slots = slots }
+            Board = { Slots = slots }
             Players = updatedPlayers }

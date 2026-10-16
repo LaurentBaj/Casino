@@ -53,9 +53,75 @@ module PlayerActions =
     /// <returns>For now it returns an updated Game state</returns>
     let public playerTurn state action =
         match action with
-        | Place(playerId, playerCard) ->
-            addCardToBoard state playerId playerCard
+        | Place(playerId, playerCard) -> addCardToBoard state playerId playerCard
         | Collect(playerId, playerCard, cardsForCollection) ->
             collectFromBord state playerId playerCard cardsForCollection
-        | Merge(playerId, playerCard, cardsForMerging) ->
-            mergeCards state playerId cardsForMerging playerCard
+        | Merge(playerId, playerCard, cardsForMerging) -> mergeCards state playerId cardsForMerging playerCard
+
+
+
+module SummarizeState =
+
+    let internal createPlayerStats (player: Player) (playerCount: int) : PlayerStats =
+        let newStats: PlayerStats =
+            player.CapturedCards
+            |> List.fold
+                (fun stat card ->
+                    match card with
+                    | { Rank = Ace } ->
+                        { stat with
+                            Aces = card :: stat.Aces
+                            Points = stat.Points + 1 }
+                    | { Rank = Number 10; Suit = Diamond } ->
+                        { stat with
+                            Specials = card :: stat.Specials
+                            Points = stat.Points + 2 }
+                    | { Rank = Number 2; Suit = Club } ->
+                        { stat with
+                            Specials = card :: stat.Specials
+                            Points = stat.Points + 1
+                            Clubs = card :: stat.Clubs }
+                    | { Suit = Club } -> { stat with Clubs = card :: stat.Clubs }
+                    | _ -> stat)
+                { Points = 0
+                  Specials = []
+                  Clubs = []
+                  Aces = []
+                  Sweeps = []
+                  Player = player }
+
+        let newStats =
+            match player.Sweeps with
+            | n when n.Length > 0 ->
+                { newStats with
+                    Points = newStats.Points + n.Length }
+            | _ -> newStats
+
+        let hasMostCards = (52 / playerCount) < player.CapturedCards.Length
+
+        let newStats =
+            if hasMostCards then
+                { newStats with
+                    Points = newStats.Points + 2 }
+            else
+                newStats
+
+        let capturedClubs =
+            player.CapturedCards |> List.filter (fun card -> card.Suit = Club)
+
+        { newStats with
+            Points =
+                if capturedClubs.Length >= 7 then
+                    newStats.Points + 1
+                else
+                    newStats.Points }
+
+    let public summarizeGame (state: GameState) : GameStats =
+        let playersCount = state.Players.Count
+        let playersList = Seq.toList state.Players.Values
+
+        let playerStats: PlayerStats list =
+            List.map (fun player -> createPlayerStats player playersCount) playersList
+
+        { Winner = playerStats |> List.maxBy _.Points |> _.Player
+          Stats = playerStats }

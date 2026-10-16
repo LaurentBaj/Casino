@@ -12,7 +12,7 @@ creating the revered game with great ease and correctness.
 2. Player Actions
    - Deal cards ✔️
    - Collect ✔️ 
-   - Merge / Build
+   - Merge / Build ✔️ 
 3. Summarize game -> Provide game details (winner, points etc..)
 
  

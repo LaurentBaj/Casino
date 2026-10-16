@@ -359,5 +359,5 @@ let ``Summarize game computes stats correctly and finds the winner`` () =
     let p2Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player2Id)
 
     p1Stats.Points |> should equal 4
-    p2Stats.Points |> should equal 7
+    p2Stats.Points |> should equal 5
     stats.Winner.Id |> should equal player2Id

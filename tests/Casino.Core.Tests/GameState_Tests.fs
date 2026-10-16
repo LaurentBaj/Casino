@@ -308,6 +308,7 @@ let ``Player Merge Cards fails when already merged slot is used to make higher a
 
 
 [<Fact>]
+[<Trait("GeneratedBy", "The amazing Jules")>]
 let ``Summarize game computes stats correctly and finds the winner`` () =
     let player1Id = Guid.NewGuid()
     let player2Id = Guid.NewGuid()

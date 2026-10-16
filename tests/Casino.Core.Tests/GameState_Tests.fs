@@ -306,3 +306,58 @@ let ``Player Merge Cards fails when already merged slot is used to make higher a
     | Valid _ -> failwith "Expected Merge action to be invalid"
     | Invalid msg -> msg |> should equal "Invalid slot grouping or cards for merging"
 
+
+[<Fact>]
+[<Trait("GeneratedBy", "The amazing Jules")>]
+let ``Summarize game computes stats correctly and finds the winner`` () =
+    let player1Id = Guid.NewGuid()
+    let player2Id = Guid.NewGuid()
+
+    let p1Captured =
+        [ { Rank = Number 10; Suit = Diamond }
+          { Rank = Ace; Suit = Heart }
+          { Rank = Number 3; Suit = Club }
+          { Rank = Number 4; Suit = Club }
+          { Rank = Number 5; Suit = Club }
+          { Rank = Number 6; Suit = Club }
+          { Rank = Number 7; Suit = Club }
+          { Rank = Number 8; Suit = Club }
+          { Rank = Number 9; Suit = Club } ]
+
+    let p2Captured =
+        [ { Rank = Number 2; Suit = Club }
+          { Rank = Ace; Suit = Spade }
+          { Rank = Ace; Suit = Diamond } ]
+        @ List.init 24 (fun _ -> { Rank = Number 2; Suit = Heart })
+
+    let p1 =
+        { Id = player1Id
+          Name = "Player 1"
+          Hand = []
+          CapturedCards = p1Captured
+          Sweeps = [] }
+
+    let p2 =
+        { Id = player2Id
+          Name = "Player 2"
+          Hand = []
+          CapturedCards = p2Captured
+          Sweeps = [] }
+
+    let testState =
+        { Deck = []
+          Players = Map [ player1Id, p1; player2Id, p2 ]
+          Board = { Slots = [ { Cards = [ { Rank = Ace; Suit = Club } ]; AggregatePoints = 1 } ] }
+          PlayerTurn = None
+          LastCaptured = Some player2Id
+          Rounds = [ Final ]
+          CurrentRound = Final }
+
+    let stats = Casino.Core.GameState.SummarizeState.summarizeGame testState
+
+    let p1Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player1Id)
+    let p2Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player2Id)
+
+    p1Stats.Points |> should equal 4
+    p2Stats.Points |> should equal 7
+    stats.Winner.Id |> should equal player2Id

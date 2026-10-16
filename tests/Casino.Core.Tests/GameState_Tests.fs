@@ -269,64 +269,6 @@ let ``Player Merge Cards fails when grouping does not match player card rank`` (
     | Invalid msg -> msg |> should equal "Invalid slot grouping or cards for merging"
 
 [<Fact>]
-let ``Summarize game computes stats correctly and finds the winner`` () =
-    let player1Id = Guid.NewGuid()
-    let player2Id = Guid.NewGuid()
-
-    let p1Captured =
-        [ { Rank = Number 10; Suit = Diamond } // 2 points
-          { Rank = Ace; Suit = Heart } // 1 point
-          { Rank = Number 3; Suit = Club } // 0 points (except for club count)
-          { Rank = Number 4; Suit = Club } // 0 points
-          { Rank = Number 5; Suit = Club } // 0 points
-          { Rank = Number 6; Suit = Club } // 0 points
-          { Rank = Number 7; Suit = Club } // 0 points
-          { Rank = Number 8; Suit = Club } // 0 points
-          { Rank = Number 9; Suit = Club } ] // 0 points, total clubs: 7 -> 1 point
-
-    let p2Captured =
-        [ { Rank = Number 2; Suit = Club } // 1 point (and a club)
-          { Rank = Ace; Suit = Spade } // 1 point
-          { Rank = Ace; Suit = Diamond } ] // 1 point
-        @ List.init 24 (fun _ -> { Rank = Number 2; Suit = Heart }) // 0 points, total 27 cards
-
-    // P1: 2 (10 of Diamonds) + 1 (Ace) + 1 (7 clubs) = 4 points, 9 cards total
-    // P2: 1 (2 of Clubs) + 2 (Aces) + 2 (Most cards, 27 > 26) = 5 points, 27 cards total
-    // P2 should win 5 to 4
-
-    let p1 =
-        { Id = player1Id
-          Name = "Player 1"
-          Hand = []
-          CapturedCards = p1Captured
-          Sweeps = [] }
-
-    let p2 =
-        { Id = player2Id
-          Name = "Player 2"
-          Hand = []
-          CapturedCards = p2Captured
-          Sweeps = [] }
-
-    let testState =
-        { Deck = []
-          Players = Map [ player1Id, p1; player2Id, p2 ]
-          Board = { Slots = [] }
-          PlayerTurn = None
-          LastCaptured = Some player2Id
-          Rounds = [ Final ]
-          CurrentRound = Final }
-
-    let stats = Casino.Core.GameState.SummarizeState.summarizeGame testState
-
-    let p1Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player1Id)
-    let p2Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player2Id)
-
-    p1Stats.Points |> should equal 4
-    p2Stats.Points |> should equal 5
-    stats.Winner.Id |> should equal player2Id
-
-[<Fact>]
 let ``Player Merge Cards fails when already merged slot is used to make higher aggregate`` () =
     let playerId = Guid.NewGuid()
 
@@ -366,32 +308,55 @@ let ``Player Merge Cards fails when already merged slot is used to make higher a
 
 
 [<Fact>]
-let ``Last captured gets remaining board cards but currently fails`` () =
-    // Setup a game state where there are still cards left on the board in the Final round
-    let playerId = Guid.NewGuid()
-    let tenOfDiamonds = { Rank = Number 10; Suit = Diamond } // 2 points
+let ``Summarize game computes stats correctly and finds the winner`` () =
+    let player1Id = Guid.NewGuid()
+    let player2Id = Guid.NewGuid()
 
-    let player =
-        { Id = playerId
+    let p1Captured =
+        [ { Rank = Number 10; Suit = Diamond }
+          { Rank = Ace; Suit = Heart }
+          { Rank = Number 3; Suit = Club }
+          { Rank = Number 4; Suit = Club }
+          { Rank = Number 5; Suit = Club }
+          { Rank = Number 6; Suit = Club }
+          { Rank = Number 7; Suit = Club }
+          { Rank = Number 8; Suit = Club }
+          { Rank = Number 9; Suit = Club } ]
+
+    let p2Captured =
+        [ { Rank = Number 2; Suit = Club }
+          { Rank = Ace; Suit = Spade }
+          { Rank = Ace; Suit = Diamond } ]
+        @ List.init 24 (fun _ -> { Rank = Number 2; Suit = Heart })
+
+    let p1 =
+        { Id = player1Id
           Name = "Player 1"
           Hand = []
-          CapturedCards = []
+          CapturedCards = p1Captured
+          Sweeps = [] }
+
+    let p2 =
+        { Id = player2Id
+          Name = "Player 2"
+          Hand = []
+          CapturedCards = p2Captured
           Sweeps = [] }
 
     let testState =
         { Deck = []
-          Players = Map [ playerId, player ]
-          Board = { Slots = [ { Cards = [ tenOfDiamonds ]; AggregatePoints = 10 } ] } // Board has 10 of diamonds
+          Players = Map [ player1Id, p1; player2Id, p2 ]
+          Board = { Slots = [ { Cards = [ { Rank = Ace; Suit = Club } ]; AggregatePoints = 1 } ] }
           PlayerTurn = None
-          LastCaptured = Some playerId
+          LastCaptured = Some player2Id
           Rounds = [ Final ]
           CurrentRound = Final }
 
     let stats = Casino.Core.GameState.SummarizeState.summarizeGame testState
 
-    let p1Stats = stats.Stats |> List.find (fun s -> s.Player.Id = playerId)
+    let p1Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player1Id)
+    let p2Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player2Id)
 
-    // Player 1 should receive the 10 of diamonds because they were the last to capture,
-    // and thus they should get 2 points from the 10 of diamonds.
-    // However, this logic is missing, so we expect this to fail initially.
-    p1Stats.Points |> should equal 2
+    p1Stats.Points |> should equal 4
+    p2Stats.Points |> should equal 7
+    stats.Winner.Id |> should equal player2Id

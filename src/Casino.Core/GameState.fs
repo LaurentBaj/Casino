@@ -7,6 +7,7 @@ open Casino.Core.PlayerService
 module InitGameState =
 
     let private getRoundsBasedOnPlayerCount count : Round list =
+    
         let drawAmount = 4
         let initialDrawCount = (drawAmount * count) + drawAmount
         let remainingCards = 52 - initialDrawCount

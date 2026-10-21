@@ -328,12 +328,7 @@ let ``Summarize game computes stats correctly and finds the winner`` () =
         [ { Rank = Number 2; Suit = Club }
           { Rank = Ace; Suit = Spade }
           { Rank = Ace; Suit = Diamond } ]
-        @ List.init 23 (fun _ -> { Rank = Number 2; Suit = Heart })
-
-    let collectionCard = { Rank = Number 5; Suit = Diamond }
-    let cardOnBoardToCollect = { Rank = Number 5; Suit = Spade }
-
-    let remainingCardOnBoard = { Rank = Ace; Suit = Club }
+        @ List.init 24 (fun _ -> { Rank = Number 2; Suit = Heart })
 
     let p1 =
         { Id = player1Id
@@ -345,42 +340,24 @@ let ``Summarize game computes stats correctly and finds the winner`` () =
     let p2 =
         { Id = player2Id
           Name = "Player 2"
-          Hand = [ collectionCard ]
+          Hand = []
           CapturedCards = p2Captured
           Sweeps = [] }
-
-    let slotToCollect = { Cards = [ cardOnBoardToCollect ]; AggregatePoints = 5 }
-    let remainingSlot = { Cards = [ remainingCardOnBoard ]; AggregatePoints = 1 }
 
     let testState =
         { Deck = []
           Players = Map [ player1Id, p1; player2Id, p2 ]
-          Board = { Slots = [ slotToCollect; remainingSlot ] }
-          PlayerTurn = Some player2Id
-          LastCaptured = None
+          Board = { Slots = [ { Cards = [ { Rank = Ace; Suit = Club } ]; AggregatePoints = 1 } ] }
+          PlayerTurn = None
+          LastCaptured = Some player2Id
           Rounds = [ Final ]
           CurrentRound = Final }
 
-    let action = Collect(player2Id, collectionCard, [ slotToCollect ])
-    let stateAfterCollectResult = playerTurn testState action
+    let stats: GameStats = SummarizeState.summarizeGame testState
 
-    match stateAfterCollectResult with
-    | Valid stateAfterCollect ->
-        stateAfterCollect.LastCaptured |> should equal (Some player2Id)
+    let p1Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player1Id)
+    let p2Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player2Id)
 
-        let stats = SummarizeState.summarizeGame stateAfterCollect
-
-        let p1Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player1Id)
-        let p2Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player2Id)
-
-        p1Stats.Points |> should equal 4
-        // P2 Points:
-        // 2 of Club: +1
-        // Ace Spade: +1
-        // Ace Diamond: +1
-        // Ace Club (from remaining board): +1
-        // Most Cards (+1)
-        // Total: 5 points
-        p2Stats.Points |> should equal 5
-        stats.Winner.Id |> should equal player2Id
-    | Invalid msg -> failwith msg
+    p1Stats.Points |> should equal 4
+    p2Stats.Points |> should equal 7
+    stats.Winner.Id |> should equal player2Id

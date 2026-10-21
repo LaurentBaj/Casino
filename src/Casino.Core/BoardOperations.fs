@@ -98,7 +98,7 @@ let internal collectFromBord
                 Sweeps = updateSweepCards }
 
         let updatedPlayers = playersAfterSweepPenalty |> Map.add playerId updatedPlayer
-        let lastCaptured = Some player.Id
+        let lastCaptured = if state.CurrentRound = Final then Some player.Id else None
 
         let updatedState =
             { state with

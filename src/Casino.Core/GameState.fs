@@ -7,6 +7,7 @@ open Casino.Core.PlayerService
 module InitGameState =
 
     let private getRoundsBasedOnPlayerCount count : Round list =
+    
         let drawAmount = 4
         let initialDrawCount = (drawAmount * count) + drawAmount
         let remainingCards = 52 - initialDrawCount
@@ -61,7 +62,7 @@ module PlayerActions =
 
 
 module SummarizeState =
-
+    
     open System
 
     let internal createPlayerStats (player: Player) (playerCount: int) (isLastCapture: bool) : PlayerStats =
@@ -125,14 +126,14 @@ module SummarizeState =
             match state.LastCaptured with
             | None -> state
             | Some playerId ->
-                let remainingCards: Card list = state.Board.Slots |> List.map _.Cards |> List.concat
+                let remainingCards: Card list = state.Board.Slots |> List.map _.Cards |> List.concat 
                 let player: Player = state.Players[playerId]
                 let updatedPlayer: Player = { player with CapturedCards = player.CapturedCards @ remainingCards }
                 let updatedPlayers: Map<Guid, Player> = Map.add playerId updatedPlayer state.Players
                 {
-                    state with
+                    state with 
                         Players = updatedPlayers
-                        Board = { state.Board with Slots = [] }
+                        GameState.Board.Slots = []
                 }
 
         let playersCount = updatedState.Players.Count

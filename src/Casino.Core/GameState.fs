@@ -62,7 +62,7 @@ module PlayerActions =
 
 
 module SummarizeState =
-    
+
     open System
 
     let internal createPlayerStats (player: Player) (playerCount: int) (isLastCapture: bool) : PlayerStats =
@@ -126,12 +126,12 @@ module SummarizeState =
             match state.LastCaptured with
             | None -> state
             | Some playerId ->
-                let remainingCards: Card list = state.Board.Slots |> List.map _.Cards |> List.concat 
+                let remainingCards: Card list = state.Board.Slots |> List.map _.Cards |> List.concat
                 let player: Player = state.Players[playerId]
                 let updatedPlayer: Player = { player with CapturedCards = player.CapturedCards @ remainingCards }
                 let updatedPlayers: Map<Guid, Player> = Map.add playerId updatedPlayer state.Players
                 {
-                    state with 
+                    state with
                         Players = updatedPlayers
                         GameState.Board.Slots = []
                 }

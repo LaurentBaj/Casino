@@ -64,6 +64,10 @@ type PlayerStats =
       Aces: Card list
       Clubs: Card list
       Sweeps: Card list
+      LastCapture: bool
+      MostCards: Guid option
       Player: Player }
 
-type GameStats = { Winner: Player; Stats: PlayerStats list }
+type GameStats =
+    { Winner: Player
+      Stats: PlayerStats list }

@@ -65,6 +65,7 @@ type PlayerStats =
       Clubs: Card list
       Sweeps: Card list
       LastCapture: bool
+      MostCards: Guid option
       Player: Player }
 
 type GameStats =

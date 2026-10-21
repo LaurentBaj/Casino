@@ -353,7 +353,7 @@ let ``Summarize game computes stats correctly and finds the winner`` () =
           Rounds = [ Final ]
           CurrentRound = Final }
 
-    let stats = Casino.Core.GameState.SummarizeState.summarizeGame testState
+    let stats: GameStats = SummarizeState.summarizeGame testState
 
     let p1Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player1Id)
     let p2Stats = stats.Stats |> List.find (fun s -> s.Player.Id = player2Id)

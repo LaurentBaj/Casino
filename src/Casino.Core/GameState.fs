@@ -61,6 +61,8 @@ module PlayerActions =
 
 
 module SummarizeState =
+    
+    open System
 
     let internal createPlayerStats (player: Player) (playerCount: int) (isLastCapture: bool) : PlayerStats =
         let newStats: PlayerStats =
@@ -89,7 +91,8 @@ module SummarizeState =
                   Aces = []
                   Sweeps = []
                   Player = player
-                  LastCapture = isLastCapture }
+                  LastCapture = isLastCapture
+                  MostCards = None}
 
         let newStats =
             match player.Sweeps with
@@ -103,17 +106,10 @@ module SummarizeState =
         let newStats =
             if hasMostCards then
                 { newStats with
-                    Points = newStats.Points + 2 }
+                    Points = newStats.Points + 1
+                    MostCards = Some player.Id }
             else
                 newStats
-
-        let newStats =
-            { newStats with
-                Points =
-                    if isLastCapture then
-                        newStats.Points + 1
-                    else
-                        newStats.Points }
 
         let capturedClubs = List.filter (fun card -> card.Suit = Club) player.CapturedCards
 
@@ -125,14 +121,28 @@ module SummarizeState =
                     newStats.Points }
 
     let public summarizeGame (state: GameState) : GameStats =
-        let playersCount = state.Players.Count
-        let playersList = Seq.toList state.Players.Values
+        let updatedState =
+            match state.LastCaptured with
+            | None -> state
+            | Some playerId ->
+                let remainingCards: Card list = state.Board.Slots |> List.map _.Cards |> List.concat 
+                let player: Player = state.Players[playerId]
+                let updatedPlayer: Player = { player with CapturedCards = player.CapturedCards @ remainingCards }
+                let updatedPlayers: Map<Guid, Player> = Map.add playerId updatedPlayer state.Players
+                {
+                    state with 
+                        Players = updatedPlayers
+                        GameState.Board.Slots = []
+                }
+
+        let playersCount = updatedState.Players.Count
+        let playersList = Seq.toList updatedState.Players.Values
 
         let playerStats: PlayerStats list =
             List.map
                 (fun player ->
                     let isLastCapture =
-                        match state.LastCaptured with
+                        match updatedState.LastCaptured with
                         | Some id -> id = player.Id
                         | None -> false
 

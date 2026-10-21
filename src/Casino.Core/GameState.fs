@@ -62,7 +62,7 @@ module PlayerActions =
 
 module SummarizeState =
 
-    let internal createPlayerStats (player: Player) (playerCount: int) : PlayerStats =
+    let internal createPlayerStats (player: Player) (playerCount: int) (isLastCapture: bool) : PlayerStats =
         let newStats: PlayerStats =
             player.CapturedCards
             |> List.fold
@@ -88,7 +88,8 @@ module SummarizeState =
                   Clubs = []
                   Aces = []
                   Sweeps = []
-                  Player = player }
+                  Player = player
+                  LastCapture = isLastCapture }
 
         let newStats =
             match player.Sweeps with
@@ -106,8 +107,15 @@ module SummarizeState =
             else
                 newStats
 
-        let capturedClubs =
-            player.CapturedCards |> List.filter (fun card -> card.Suit = Club)
+        let newStats =
+            { newStats with
+                Points =
+                    if isLastCapture then
+                        newStats.Points + 1
+                    else
+                        newStats.Points }
+
+        let capturedClubs = List.filter (fun card -> card.Suit = Club) player.CapturedCards
 
         { newStats with
             Points =
@@ -121,7 +129,15 @@ module SummarizeState =
         let playersList = Seq.toList state.Players.Values
 
         let playerStats: PlayerStats list =
-            List.map (fun player -> createPlayerStats player playersCount) playersList
+            List.map
+                (fun player ->
+                    let isLastCapture =
+                        match state.LastCaptured with
+                        | Some id -> id = player.Id
+                        | None -> false
+
+                    createPlayerStats player playersCount isLastCapture)
+                playersList
 
         { Winner = playerStats |> List.maxBy _.Points |> _.Player
           Stats = playerStats }

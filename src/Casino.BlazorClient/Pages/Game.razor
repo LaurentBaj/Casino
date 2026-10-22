@@ -102,7 +102,9 @@ else if (_gameState != null)
 
     private async Task ConnectToGame()
     {
-        var wsUri = new Uri(Navigation.BaseUri.Replace("http", "ws") + "ws");
+        var absoluteUri = Navigation.ToAbsoluteUri("/ws");
+        var scheme = absoluteUri.Scheme == "https" ? "wss" : "ws";
+        var wsUri = new Uri($"{scheme}://{absoluteUri.Authority}{absoluteUri.AbsolutePath}");
 
         try
         {
